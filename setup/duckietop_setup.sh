@@ -22,6 +22,9 @@ sudo apt-add-repository ppa:git-core/ppa
 sudo apt-get update
 sudo apt-get install git
 
+# Install additional packages 
+sudo apt-get install openssh-server byobu vim avahi-discover avahi-utils  ecryptfs-utils htop git-extras
+
 # Checkout duckietown/Software repo from github
 # mkdir -p ~/duckietown
 # cd ~/duckietown
