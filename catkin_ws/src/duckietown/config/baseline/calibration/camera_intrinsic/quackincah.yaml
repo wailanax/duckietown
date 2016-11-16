@@ -1,20 +1,20 @@
-image_width: 640
-image_height: 480
-camera_name: /porsche911/rosberrypi_cam
 camera_matrix:
-  rows: 3
   cols: 3
-  data: [307.7379294605756, 0, 329.692367951685, 0, 314.9827773443905, 244.4605588877848, 0, 0, 1]
-distortion_model: plumb_bob
+  data: [300.46287015028213, 0.0, 308.30218520428116, 0.0, 308.74910244867505, 259.82623752224174, 0.0, 0.0, 1.0]
+  rows: 3
+camera_name: /quackincah/camera_node
 distortion_coefficients:
-  rows: 1
   cols: 5
-  data: [-0.2565888993516047, 0.04481160508242147, -0.00505275149956019, 0.001308569367976665, 0]
-rectification_matrix:
-  rows: 3
-  cols: 3
-  data: [1, 0, 0, 0, 1, 0, 0, 0, 1]
+  data: [-0.22739791586725688, 0.03286913594463442, -0.007561528084563974, -0.00010355727784058272, 0.0]
+  rows: 1
+distortion_model: plumb_bob
+image_height: 480
+image_width: 640
 projection_matrix:
-  rows: 3
   cols: 4
-  data: [210.1107940673828, 0, 327.2577820024981, 0, 0, 253.8408660888672, 239.9969353923052, 0, 0, 0, 1, 0]
+  data: [198.5755615234375, 0.0, 313.5675233564398, 0.0, 0.0, 254.28109741210938, 260.7705548356025, 0.0, 0.0, 0.0, 1.0, 0.0]
+  rows: 3
+rectification_matrix:
+  cols: 3
+  data: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+  rows: 3
