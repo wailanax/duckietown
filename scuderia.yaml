@@ -2,5 +2,18 @@ duckiebot1:
   name: Greg Grebe
 duckmobile:
   name: Greg Grebe
+<<<<<<< HEAD
 motherduck:
   name: Austin Hardy
+=======
+duckedout:
+  name: Jonathan Zeosky
+duckieryan:
+  name: Ryan Feldhausen
+faduck:
+  name: Devon Baughen
+quackincah:
+  name: Lex Jimenez
+dumpduck:
+  name: Chandler Dunn
+>>>>>>> c2e9186bc6e9043cf9e56c06921e55759be39ebb
