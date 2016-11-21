@@ -1,0 +1,23 @@
+camera_matrix:
+  cols: 3
+  data: [313.36650034934365, 0.0, 314.45687227803984, 0.0, 318.1263716819443, 239.71953741586304,
+    0.0, 0.0, 1.0]
+  rows: 3
+camera_name: motherduck/camera_node
+distortion_coefficients:
+  cols: 5
+  data: [-0.28359008109992057, 0.06083116911209738, 0.0008711231910832554, 0.0011312229247169108,
+    0.0]
+  rows: 1
+distortion_model: plumb_bob
+image_height: 480
+image_width: 640
+projection_matrix:
+  cols: 4
+  data: [220.47799682617188, 0.0, 314.6072353712734, 0.0, 0.0, 252.26414489746094,
+    240.23188501081313, 0.0, 0.0, 0.0, 1.0, 0.0]
+  rows: 3
+rectification_matrix:
+  cols: 3
+  data: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+  rows: 3
