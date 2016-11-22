@@ -1,2 +1,1 @@
-float32[] tau
-
+float32 tau

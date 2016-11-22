@@ -101,6 +101,7 @@ add_message_files(
   ObstacleProjectedDetection.msg
   ObstacleProjectedDetectionList.msg
   Tau.msg
+  TauOld.msg
 )
 
 ## Generate services in the 'srv' folder

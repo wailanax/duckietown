@@ -13,6 +13,8 @@ import sys
 import argparse
 import math
 
+import pdb
+
 class TauNode(object):
     def __init__(self,debug):
         self.node_name = "TauNode"
@@ -36,17 +38,20 @@ class TauNode(object):
         self.verbose = True
         # Right now the joymapper maps to a param for line_detector_node/verbose...
         # figure out if we can remap this or if we need to fix this in joy_mapper_node
-        self.image_size = [120,160] 
-        self.hsv_red1 = np.array([120, 40, 80])
-        self.hsv_red2 = np.array([179, 140, 136])
-        self.hsv_red3 = np.array([165, 140, 100])
-        self.hsv_red4 = np.array([180, 255, 255])
-        self.canny_thresholds = [80,200]
-        self.hough_threshold  = 10 #20
-        self.hough_min_line_length = 8#3
-        self.hough_max_line_gap = 5 #10
-        self.dilation_kernel_hsv_size = 3
-        self.dilation_kernel_edge_size = 3
+        self.image_size = [480,640,3] 
+        self.curr_frame = np.zeros(self.image_size, np.uint8)
+        self.prev_frame = np.zeros(self.image_size[0:2], np.uint8)
+        self.Et_thresh = 0.01;
+        #self.hsv_red1 = np.array([120, 70, 90]) #np.array([120, 40, 80])
+        #self.hsv_red2 = np.array([179, 160, 140]) #np.array([179, 140, 136])
+        #self.hsv_red3 = np.array([165, 140, 100])
+        #self.hsv_red4 = np.array([180, 255, 255])
+        #self.canny_thresholds = [80,200]
+        #self.hough_threshold  = 5 #10 #20
+        #self.hough_min_line_length = 5 #8 #3
+        #self.hough_max_line_gap = 5 #10
+        #self.dilation_kernel_hsv_size = 3
+        #self.dilation_kernel_edge_size = 3
 
         # Publishers
         self.pub_tau = rospy.Publisher("~tau", Tau, queue_size=1)
@@ -54,29 +59,24 @@ class TauNode(object):
 
         # Subscribers
         # this would require remapping...
-        if not self.debug:
-            self.sub_image = rospy.Subscriber("~image", CompressedImage, self.cbImage, queue_size=1)
-        else:
+        if self.debug: # get image from computer camera
+            
             rospy.loginfo("[%s] debug = %s)." %(self.node_name, self.debug) )
-            # set up timer to capture image
+            
+            self.c0 = [self.image_size[0]/2, self.image_size[1]/2]
+            #Open the Video Feed
             self.cap = cv2.VideoCapture(0)
             if not self.cap.isOpened():
                 print 'Error opening file...'
                 return -1
-            cv2.namedWindow('Control', cv2.WINDOW_AUTOSIZE)
-            cv2.createTrackbar('LowH',  'Control', self.hsv_red1[0], 179, self.nothing)
-            cv2.createTrackbar('HighH', 'Control', self.hsv_red2[0], 179, self.nothing)
-            cv2.createTrackbar('LowS',  'Control', self.hsv_red1[1], 255, self.nothing)
-            cv2.createTrackbar('HighS', 'Control', self.hsv_red2[1], 255, self.nothing)
-            cv2.createTrackbar('LowV',  'Control', self.hsv_red1[2], 255, self.nothing)
-            cv2.createTrackbar('HighV', 'Control', self.hsv_red2[2], 255, self.nothing)
-            cv2.createTrackbar('HoughThresh', 'Control', self.hough_threshold, 50, self.nothing)
-            cv2.createTrackbar('HoughMinLineLength', 'Control', self.hough_min_line_length, 50, self.nothing)
-            cv2.createTrackbar('HoughMaxLineGap', 'Control', self.hough_max_line_gap, 50, self.nothing)
-
+            
+            # set up timer to capture image
             rospy.Timer(rospy.Duration(1.0/15), self.cbDebug)
-
-        #self.sub_april = rospy.Subscriber("~detections", AprilTagDetectionArray, self.cbDetection)
+        else:
+            self.sub_image = rospy.Subscriber("~image", CompressedImage, self.cbImage, queue_size=1)
+            # Determine camera center!
+            #self.c0 =  
+            
         self.sub_switch = rospy.Subscriber("~switch", BoolStamped, self.cbSwitch)
 
         rospy.loginfo("[%s] Initialized (verbose = %s)." %(self.node_name, self.verbose) )
@@ -92,10 +92,13 @@ class TauNode(object):
 
     def cbDebug(self,event):
         ret, frame = self.cap.read()
+        
         img_msg = Image()
         img_msg.data = frame
         img_msg.header.stamp = event.current_real
         self.cbImage(img_msg)
+        cv2.imshow('image', frame)
+        cv2.waitKey(1)
 
     def cbImage(self, image_msg):
         # If not active return immediately
@@ -122,147 +125,105 @@ class TauNode(object):
 
     def processImage_(self,image_msg):
 
-        if not self.debug:
+        if self.debug:
+            # just get the data
+            image_raw = image_msg.data
+        else:
             # Decode from compressed image using OpenCV
             try:
-                image_cv = image_cv_from_jpg(image_msg.data)
+                image_raw = image_cv_from_jpg(image_msg.data)
             except ValueError as e:
                 self.loginfo('Could not decode image: %s ' %e)
                 return
-        else:
-            image_cv = image_msg.data
             
-
         # resize to make processing quicker (downsample)
-        h_orig, w_orig = image_cv.shape[0:2]
+        h_orig, w_orig = image_raw.shape[0:2]
         if self.image_size[0] != h_orig or self.image_size[1] != w_orig:
-            image_cv = cv2.resize(image_cv, (self.image_size[0], self.image_size[1]),
+            image_raw = cv2.resize(image_raw, (self.image_size[0], self.image_size[1]),
                 interpolation=cv2.INTER_NEAREST)
 
-        # Do we need to color correct?
-        # Lets assume no for now
 
-        # convert to HSV 
-        #bgr = np.copy(image_cv)
-        hsv = cv2.cvtColor(image_cv, cv2.COLOR_BGR2HSV)
+        # Lets deal with only one color channel for now...
+        # Choose the red channel
+        #image_r = image_raw[:,:,2]
+        im1 = image_raw[:,:,2]
 
-        # color threshold to detect red objects
-        kernel_hsv = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, 
-            (self.dilation_kernel_hsv_size, self.dilation_kernel_hsv_size))
-        kernel_edge = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, 
-            (self.dilation_kernel_edge_size, self.dilation_kernel_edge_size))
-        if self.debug:
-            self.hsv_red1[0] = cv2.getTrackbarPos('LowH', 'Control')
-            self.hsv_red1[1] = cv2.getTrackbarPos('LowS', 'Control')
-            self.hsv_red1[2] = cv2.getTrackbarPos('LowV', 'Control')
-            self.hsv_red2[0] = cv2.getTrackbarPos('HighH', 'Control')
-            self.hsv_red2[1] = cv2.getTrackbarPos('HighS', 'Control')
-            self.hsv_red2[2] = cv2.getTrackbarPos('HighV', 'Control')
-            bw = cv2.inRange(hsv, self.hsv_red1, self.hsv_red2)
-            bw = cv2.dilate(bw, kernel_hsv)
-            bw = cv2.erode(bw, kernel_hsv) 
+        # May need to do LPF'ing (block averaging)
 
+        # combine the image with the previous frame
+        # CHECK: Need to make sure that order is ok for time derivative...
+        #imgseq = cv2.merge((image_r, self.prev_frame)).astype(float)
+        im2 = self.prev_frame
+        
+        #Ey, Ex, Et = gradient(image_time)
+        #dx = np.diff(image_time, axis=1)
+        #dy = np.diff(image_time, axis=0)
+        #dt = np.diff(image_time, axis=2)
+        #kernel = 0.25*np.ones([2,2,2])
+
+        #pdb.set_trace()
+
+        # Compute partial derivatives with a 2x2x2 cube.
+        # Note right edge will just be zeros...
+        Ex = np.zeros(np.array(self.image_size[0:2]))
+        Ey = np.zeros(np.array(self.image_size[0:2]))
+        Et = np.zeros(np.array(self.image_size[0:2]))
+        '''
+        for i in range(self.image_size[0]-1):
+            for j in range(self.image_size[1]-1):
+                k = 0
+                Ex[i,j] = 0.25*(imgseq[i,j+1,k] - imgseq[i,j,k]
+                                + imgseq[i+1,j+1,k] - imgseq[i+1,j,k]
+                                + imgseq[i,j+1,k+1] - imgseq[i,j,k+1]
+                                + imgseq[i+1,j+1,k+1] - imgseq[i+1,j,k+1])
+                Ey[i,j] = 0.25*(imgseq[i+1,j,k] - imgseq[i,j,k]
+                                + imgseq[i+1,j+1,k] - imgseq[i,j+1,k]
+                                + imgseq[i+1,j,k+1] - imgseq[i,j,k+1]
+                                + imgseq[i+1,j+1,k+1] - imgseq[i,j+1,k+1])
+                Et[i,j] = 0.25*(imgseq[i,j,k+1] - imgseq[i,j,k]
+                                + imgseq[i+1,j,k+1] - imgseq[i+1,j,k]
+                                + imgseq[i,j+1,k+1] - imgseq[i,j+1,k]
+                                + imgseq[i+1,j+1,k+1] - imgseq[i+1,j+1,k]) 
+        '''
+        Ex[1:-1,1:-1] = 0.25*(im1[1:-1, 1:-1] - im1[1:-1, :-2] + im1[:-2,1:-1] - im1[:-2,:-2] \
+                        +  im2[1:-1, 1:-1] - im2[1:-1, :-2] + im2[:-2, 1:-1] - im2[:-2,:-2])
+
+        Ey[1:-1,1:-1] = 0.25*(im1[1:-1, 1:-1] - im1[:-2, 1:-1] + im1[1:-1, :-2] - im1[:-2 ,:-2] \
+                        +  im2[1:-1, 1:-1] - im2[:-2, 1:-1] + im2[1:-1, :-2] - im2[:-2 ,:-2])
+
+        Et[1:-1, 1:-1] = 0.25*(im1[1:-1, 1:-1] - im2[1:-1,1:-1] + im1[1:-1, :-2] - im2[1:-1, :-2] \
+                        +  im1[:-2, 1:-1] - im2[:-2, 1:-1] + im1[:-2, :-2] - im2[:-2,:-2])
+        # Threshold Et
+        thresh_idx = Et < self.Et_thresh
+        Et[thresh_idx] = 0
+
+        # Compute the radial gradient
+        x = np.arange(self.image_size[1]) # cols
+        y = np.arange(self.image_size[0]) # rows
+
+        xx,yy = np.meshgrid(x,y);
+        xx -= self.c0[0] #subtract off the image center.
+        yy -= self.c0[1] #subtract off the image center.
+
+        G = (xx*Ex) + (yy*Ey) # These are elementwise!
+
+        # Compute C (inv of TTC)
+        #G_squared = G**2 # also elementwise!
+        #GEt = G*Et # again elementwise
+        C = -1*np.sum(G*Et)/np.sum(G**2)
+
+        if C == 0:
+            tau = np.inf
         else:
-            bw1 = cv2.inRange(hsv, self.hsv_red1, self.hsv_red2)
-            bw2 = cv2.inRange(hsv, self.hsv_red3, self.hsv_red4)
-            bw = cv2.bitwise_or(bw1, bw2)
-        
-
-        # also perform canny edge detection
-        gray = cv2.cvtColor(image_cv, cv2.COLOR_BGR2GRAY)
-        edges = cv2.Canny(gray, self.canny_thresholds[0], self.canny_thresholds[1], apertureSize = 3) 
-        
-        edges = cv2.dilate(edges, kernel_edge)
-
-        # get only red edges
-        edge_red = cv2.bitwise_and(bw, edges)
-
-        # detect lines
-        if self.debug:
-            self.hough_threshold = cv2.getTrackbarPos('HoughThresh', 'Control')
-            self.hough_min_line_length = cv2.getTrackbarPos('HoughMinLineLength', 'Control')
-            self.hough_max_line_gap = cv2.getTrackbarPos('HoughMaxLineGap', 'Control')
-        
-        # (input_edge_img, rho, theta, thresh, minLinLength,maxLineGap)
-        # input_edge_img - the edge detected image as input
-        # rho - the resolution of the parameter r in pixels (1 pixel)
-        # theta - the resolution of the parameter theta in radians (1 deg)
-        # thresh - the minimum number of intersections to detect a line
-        # minLinLength - minimum number of points that can form a line
-        # maxLineGap - maximum gap between 2 points to be considered same line
-        lines = cv2.HoughLinesP(edge_red, 1, np.pi/180, 
-            self.hough_threshold, np.empty(1), 
-            self.hough_min_line_length, 
-            self.hough_max_line_gap)
-
-        lineimg = np.zeros([160,120,3], np.uint8)
-        if lines is not None:
-            for x1,y1,x2,y2 in lines[0]:
-                cv2.line(lineimg,(x1,y1),(x2,y2),(0,255,0),5)
-            
-            #print "line: "
-            #print lines[0]
-            lines_min = lines.min(1)[0]
-            lines_max = lines.max(1)[0]
-            #print lines_min
-            #print lines_min[0]
-            #print lines_max
-            x_max = max(lines_max[0], lines_max[2])
-            x_min = min(lines_min[0], lines_min[2])
-            y_max = max(lines_max[1], lines_max[3])
-            y_min = min(lines_min[1], lines_min[3])
-            
-            # use that to compute the length.
-            dx = float(x_max - x_min)
-            dy = float(y_max - y_min)
-
-            # compute time step
-            img_time = image_msg.header.stamp
-            time_diff = img_time - self.prev_img_time
-            ts = time_diff.to_sec()
-
-            # compute derivatives
-            dx_dot = (dx - self.prev_dx)*ts
-            dy_dot = (dy - self.prev_dy)*ts
-
-            # compute tau
-            if dx_dot == 0:
-                taux = np.inf
-            else:
-                taux = dx / dx_dot
-
-            if dy_dot == 0:
-                tauy = np.inf
-            else: 
-                tauy = dy / dy_dot
-
-            tau = np.array([taux, tauy])
-
-            # save values for next iteration
-            self.prev_dx = dx
-            self.prev_dy = dy
-            self.prev_img_time = img_time
-            self.prev_tau = tau
-        else:
-            tau = self.prev_tau
-            
-        if self.debug:
-            cv2.imshow('image', image_cv)
-            cv2.imshow('bw', bw)
-            cv2.imshow('edges',edges)
-            cv2.imshow('red', edge_red)
-            cv2.imshow('lineimg', lineimg)
-            cv2.waitKey(1)
-
-        # output our detected image for debugging
-        detection_img = self.bridge.cv2_to_imgmsg(lineimg, "bgr8")
-        detection_img.header.stamp = image_msg.header.stamp
-        self.pub_im_detection.publish(detection_img)
+            tau = 1/C
 
         # output tau
         tau_msg = Tau()
         tau_msg.tau = tau
         self.pub_tau.publish(tau_msg)
+
+        # update previous frame
+        self.prev_frame = im1
 
     def onShutdown(self):
         cv2.destroyAllWindows()
