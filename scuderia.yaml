@@ -2,6 +2,8 @@ duckiebot1:
   name: Greg Grebe
 duckmobile:
   name: Greg Grebe
+mkduckiebot:
+  name: Kun Su
 motherduck:
   name: Austin Hardy
 duckedout:
@@ -18,5 +20,10 @@ c3po:
   name: Cameron Mine
 bb8:
   name: Zhiying Jiang
+<<<<<<< HEAD
 roastduckie:
   name: Tonghe Zhang
+=======
+dtpd:
+  name: Zhengjie Zhang
+>>>>>>> 16bb911e6452714f1a3b7014fbac26b7aa856195
