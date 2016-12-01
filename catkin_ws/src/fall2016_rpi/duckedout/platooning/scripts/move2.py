@@ -40,7 +40,7 @@ class Move2Node(object):
 		
 #		self.movetime = 1
 		self.v_max = .2
-		self.omega_max = 2
+		self.omega_max = 4
 		self.pub_vel = rospy.Publisher("~car_cmd", Twist2DStamped, queue_size=1) 
 		self.sub = rospy.Subscriber("~move_cmd", Pose2DStamped, self.move_callback, queue_size=1) 
 		

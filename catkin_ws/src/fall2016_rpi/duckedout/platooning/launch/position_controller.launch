@@ -11,7 +11,8 @@
     <!-- position_controller -->
     <remap from="position_controller_node/lane_pose" to="lane_filter_node/lane_pose"/>
     <remap from="position_controller_node/apriltags_in" to="tag_detections"/>
-    <node ns="$(arg veh)" name="position_controller_node" pkg="platooning" type="position_controller.py" output="screen" />
+    <node if="$(arg local)" ns="$(arg veh)" name="position_controller_node" pkg="platooning" type="position_controller.py" output="screen" />
+    <node unless="$(arg local)" machine="$(arg veh)" ns="$(arg veh)" name="position_controller_node" pkg="platooning" type="position_controller.py" output="screen" />
 
        <!-- lane filter -->
     <include file="$(find duckietown)/launch/lane_filter.launch">
@@ -33,7 +34,6 @@
         <arg name="config" value="$(arg config)"/>
         <arg name="param_file_name" value="$(arg param_file_name)"/>
     </include>
-
 
 
     <!-- run inverse_kinematics_node -->

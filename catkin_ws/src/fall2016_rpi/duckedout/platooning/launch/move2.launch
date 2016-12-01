@@ -6,7 +6,8 @@
     <include file="$(find duckietown)/machines"/>
 
     <!-- move2 -->
-    <node ns="$(arg veh)" name="move2_node" pkg="platooning" type="move2.py" output="screen" />
+    <node if="$(arg local)" ns="$(arg veh)" name="move2_node" pkg="platooning" type="move2.py" output="screen" />
+    <node unless="$(arg local)" machine="$(arg veh)" ns="$(arg veh)" name="move2_node" pkg="platooning" type="move2.py" output="screen" />
 
     <!-- run inverse_kinematics_node -->
     <remap from="inverse_kinematics_node/car_cmd" to="move2_node/car_cmd"/>

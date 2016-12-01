@@ -24,10 +24,10 @@ class PoseControlNode(object):
 	def __init__(self):
 		self.node_name = rospy.get_name()
 		
-		self.kd = 15
-		self.kphi = 2
+		self.kd = 45
+		self.kphi = 6
 
-		self.currentv = .1
+		self.currentv = .3
 		self.currentomega = 0
 		self.prevz = 100000
 
