@@ -1,0 +1,23 @@
+camera_matrix:
+  cols: 3
+  data: [310.2759775605148, 0.0, 313.51934398125724, 0.0, 304.8634748767306, 215.03160682843625,
+    0.0, 0.0, 1.0]
+  rows: 3
+camera_name: raytech/camera_node
+distortion_coefficients:
+  cols: 5
+  data: [-0.2538660850483485, 0.044280388172077904, 0.004354194491465517, -0.000602080924421569,
+    0.0]
+  rows: 1
+distortion_model: plumb_bob
+image_height: 480
+image_width: 640
+projection_matrix:
+  cols: 4
+  data: [212.2314910888672, 0.0, 310.634112120415, 0.0, 0.0, 240.14691162109375, 204.4693009761686,
+    0.0, 0.0, 0.0, 1.0, 0.0]
+  rows: 3
+rectification_matrix:
+  cols: 3
+  data: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+  rows: 3
