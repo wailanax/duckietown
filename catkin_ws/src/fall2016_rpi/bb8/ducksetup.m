@@ -1,5 +1,5 @@
-if ~exist('duck')
-    duck=RobotRaconteur.Connect('tcp://10.0.1.34:1234/DuckiebotServer.duckmobile/Duckiebot');
+if ~exist('bb8')
+    duck=RobotRaconteur.Connect('tcp://bb8.local:1234/DuckiebotServer.bb8/Duckiebot');
     camera_on=0;
 else
     if camera_on==0;duck.openCamera();camera_on=1;end

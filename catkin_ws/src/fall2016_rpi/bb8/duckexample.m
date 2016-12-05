@@ -1,16 +1,15 @@
 duck=RobotRaconteur.Connect('tcp://bb8.local:1234/DuckiebotServer.bb8/Duckiebot');
 
-n = 921600; h = 640; w = 480;
+duck.sendCmd(1.0,3.0); %the lager omega is, more left the duckbot will go. 
+                       %e.g 5.0 is too large
+pause(1.5);
 
-tic;
+duck.sendCmd(0.0,0.0);
 
-I1 = duck.getImage();
-
-C = zeros(480,640,3,'uint8');
-C(:,:,1)=reshape(I1.data(1:3:n),h,w)';
-C(:,:,2)=reshape(I1.data(2:3:n),h,w)';
-C(:,:,3)=reshape(I1.data(3:3:n),h,w)';
-
-toc
-figure(1);image(C);
-colorbar
+%{
+duck.sendCmd(0.8,-10);
+pause(0.5);
+duck.sendCmd(1.0,0.0);
+pause(1);
+duck.sendCmd(0.0,0.0);
+%}
