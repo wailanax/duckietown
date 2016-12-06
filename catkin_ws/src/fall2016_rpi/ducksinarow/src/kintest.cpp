@@ -18,29 +18,28 @@ int main(int argc, char **argv)
   ros::NodeHandle nh_;
 
   //ros::Subscriber sub_twist_;
-  ros::Publisher pub_wheelsCmd_;
+  //ros::Publisher pub_wheelsCmd_;
 
   ros::Publisher pub_wheelsCmd_ = nh_.advertise<duckietown_msgs::WheelsCmdStamped>("wheels_cmd", 10);
 
-  ros::Rate loop_rate(10) //10 Hz?;
+  ros::Rate loop_rate(10); //10 Hz?;
 
-  Kleft = 25.0;
-  Kright = 25.0;
-  rleft = 0.02;
-  rright = 0.02;
-  bwidth = 0.1;
+  double Kleft = 25.0;
+  double Kright = 25.0;
+  double rleft = 0.02;
+  double rright = 0.02;
+  double bwidth = 0.1;
   
   while (ros::ok())
   {
 
     double omega_r = 5;
     double omega_l = 5;
-
+    
     double rduty = omega_r / Kright;
     double lduty = omega_l / Kleft;
 
     duckietown_msgs::WheelsCmdStamped cmd_msg;
-    cmd_msg.header = msg->header;
 
     cmd_msg.header.stamp = ros::Time::now();  //Keep the time the command was given to the wheels_driver
     cmd_msg.vel_left = float(lduty);
