@@ -11,6 +11,7 @@
         <arg name="config" value="$(arg config)"/>
         <arg name="param_file_name" value="$(arg param_file_name)"/>
         <arg name="raw" value="true"/> <!-- test expects raw images -->
+        <arg name="rect" value="true"/> <!-- test expects rect images also -->
     </include>
 
     <!-- ground_projection -->

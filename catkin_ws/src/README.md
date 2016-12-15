@@ -20,7 +20,6 @@ I am trying to go through each package to see what they contain.
    Code was ported to C++ ( http://wiki.tekkotsu.org/index.php/AprilTags )  
    Code has now been modified (by MIT) to be a standalone library with homography based on openCV.   
 
-   It may be possible to use some other library if a better one exists or if we want to standardize.  
 
   *  apriltags
  
@@ -38,6 +37,13 @@ I am trying to go through each package to see what they contain.
 	
     Old code they didn't want to get rid of but is no longer in use...
 
+*   car_supervisor
 
-
-
+*   dagu_car
+    
+    The forward and inverse kinematics for the car.  
+    This gives the following nodes  
+    * forward\_kinematics\_node.py - estimate the velocity and orientation from the wheel command
+    * inverse\_kinematics\_node.py - map the car command into a wheel command 
+    * velocity\_to\_pose\_node.py - convert the velocity and omega to a pose. 
+    

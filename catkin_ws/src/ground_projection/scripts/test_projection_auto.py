@@ -26,9 +26,9 @@ class GroundProjectionTest:
     self.th_mean_sq_dist = 0.03**2 # 3cm error bound
 
   def get_image_topic_name(self, veh):
-    image_topic_name = veh + "/camera_node/image_rect"
+    image_topic_name = veh + "/camera_node/image/rect"
     try:
-      rospy.wait_for_message(image_topic_name, Image, timeout=3)
+      rospy.wait_for_message(image_topic_name, Image, timeout=10)
       return image_topic_name
     except rospy.ROSException, e:
       print "%s" % e
