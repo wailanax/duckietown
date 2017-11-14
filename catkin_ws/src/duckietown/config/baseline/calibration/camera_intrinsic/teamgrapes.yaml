@@ -1,0 +1,23 @@
+camera_matrix:
+  cols: 3
+  data: [319.97611068944303, 0.0, 316.33086474145694, 0.0, 323.29009939622046, 228.23309996729827,
+    0.0, 0.0, 1.0]
+  rows: 3
+camera_name: teamgrapes/camera_node
+distortion_coefficients:
+  cols: 5
+  data: [-0.25481447377891137, 0.04011060093697668, 0.005257201858277141, -0.00037643561513286066,
+    0.0]
+  rows: 1
+distortion_model: plumb_bob
+image_height: 480
+image_width: 640
+projection_matrix:
+  cols: 4
+  data: [208.21446228027344, 0.0, 318.67490169587836, 0.0, 0.0, 264.67724609375, 227.79609756037826,
+    0.0, 0.0, 0.0, 1.0, 0.0]
+  rows: 3
+rectification_matrix:
+  cols: 3
+  data: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+  rows: 3
