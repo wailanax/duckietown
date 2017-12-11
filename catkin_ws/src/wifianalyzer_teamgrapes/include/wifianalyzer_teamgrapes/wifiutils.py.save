@@ -18,7 +18,7 @@ def get_name(cell):
 
 def get_quality(cell):
     quality = matching_line(cell,"Quality=").split()[0].split('/')
-    return int(round(float(quality[0]) / float(quality[1]) * 100))
+    return str(int(round(float(quality[0]) / float(quality[1]) * 100))).rjust(3) + " %"
 
 def get_channel(cell):
     return matching_line(cell,"Channel:")
@@ -129,7 +129,9 @@ def print_cells(cells):
         table.append(cell_properties)
     print_table(table)
 
-def get_duckietown_strength():
+#def get_duckietown_strength():
+
+def main():
     """Pretty prints the output of iwlist scan into a table"""
     
     cells=[[]]
@@ -152,5 +154,6 @@ def get_duckietown_strength():
 
     sort_cells(parsed_cells)
     
-    return parsed_cells[0]["Quality"]
+    print parsed_cells[0]    # print_cells(parsed_cells)
 
+main()
