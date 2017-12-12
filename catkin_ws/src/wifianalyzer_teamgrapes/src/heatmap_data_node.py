@@ -53,7 +53,7 @@ def updatePosition(twist_msg):
     
     strength = wu.get_duckietown_strength()
     
-    rospy.loginfo(rospy.get_caller_id() + " robot is now at x:%f y:%f theta:%f with strength %d", xPos, yPos, theta, strength)
+    rospy.loginfo(rospy.get_caller_id() + " robot is now at x:%f y:%f theta:%f with strength %d", oldPose.x, oldPose.y, oldPose.theta, strength)
 
 # listens for updates to the lane_pose topic and updates known position accordingly
 def listener():
