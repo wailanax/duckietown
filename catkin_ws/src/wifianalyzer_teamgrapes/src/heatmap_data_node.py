@@ -10,7 +10,7 @@ from wifianalyzer_teamgrapes import wifiutils as wu
 lastLinVel = 0.0
 lastAngVel = 0.0
 oldPose = Pose2DStamped()
-f = open('~/heatmapdata.csv', 'wt')
+f = open('./heatmapdata.csv', 'wt')
 writer = csv.writer(f)
 
 # integrates the linear and angular velocities to calculate displacement
