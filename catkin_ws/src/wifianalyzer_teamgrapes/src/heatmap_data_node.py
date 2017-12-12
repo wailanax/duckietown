@@ -2,12 +2,16 @@
 
 import rospy
 import math
+import csv
+import sys
 from duckietown_msgs.msg import Twist2DStamped, Pose2DStamped
 from wifianalyzer_teamgrapes import wifiutils as wu
 
 lastLinVel = 0.0
 lastAngVel = 0.0
 oldPose = Pose2DStamped()
+f = open('~/heatmapdata.csv', 'wt')
+writer = csv.writer(f)
 
 # integrates the linear and angular velocities to calculate displacement
 def integrate(theta_dot, v, dt):
@@ -53,10 +57,13 @@ def updatePosition(twist_msg):
     
     strength = wu.get_duckietown_strength()
     
+    writer.writerow((oldPose.x, oldPose.y, strength))
     rospy.loginfo(rospy.get_caller_id() + " robot is now at x:%f y:%f theta:%f with strength %d", oldPose.x, oldPose.y, oldPose.theta, strength)
 
 # listens for updates to the lane_pose topic and updates known position accordingly
 def listener():
+    global writer
+    writer.writerow(('x','y','strength'))
     print "listening\n"
     #rospy.init_node('heatmap_data_node', anonymous=True)
     rospy.Subscriber("/teamgrapes/lane_controller_node/car_cmd", Twist2DStamped, updatePosition)
