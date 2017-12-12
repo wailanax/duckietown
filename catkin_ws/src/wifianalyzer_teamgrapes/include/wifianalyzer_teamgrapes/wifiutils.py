@@ -6,6 +6,7 @@
 
 import sys
 import subprocess
+import noise
 
 interface = "wlan0"
 
@@ -128,6 +129,9 @@ def print_cells(cells):
             cell_properties.append(cell[column])
         table.append(cell_properties)
     print_table(table)
+
+def get_duckietown_strength_perlin(x,y):
+    return noise.pnoise2(x,y)
 
 def get_duckietown_strength():
     """Pretty prints the output of iwlist scan into a table"""

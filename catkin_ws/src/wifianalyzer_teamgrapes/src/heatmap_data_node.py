@@ -55,7 +55,7 @@ def updatePosition(twist_msg):
    # xPos = math.cos(theta)*linearVel*dt + xPos
    # yPos = math.sin(theta)*linearVel*dt + yPos
     
-    strength = wu.get_duckietown_strength()
+    strength = wu.get_duckietown_strength_perlin(oldPose.x, oldPose.y)
     
     writer.writerow((oldPose.x, oldPose.y, strength))
     rospy.loginfo(rospy.get_caller_id() + " robot is now at x:%f y:%f theta:%f with strength %d", oldPose.x, oldPose.y, oldPose.theta, strength)
