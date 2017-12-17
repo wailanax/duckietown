@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import rospy
 import cv2
 import csv
 import numpy as np
