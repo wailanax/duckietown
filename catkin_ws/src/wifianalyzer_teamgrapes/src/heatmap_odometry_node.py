@@ -7,6 +7,7 @@ import numpy as np
 import sys
 from sensor_msgs.msg import CameraInfo, CompressedImage, Image
 from cv_bridge import CvBridge, CvBridgeError
+from duckietown_utils.jpg import image_cv_from_jpg
 
 #class PinholeCamera:
 #    def __init__(self, width, height, fx, fy, cx, cy, k1, k2, p1, p2, k3):
@@ -22,16 +23,16 @@ class VisualOdometry:
         self.secondImage = True
 
         self.f = open(outputFile, 'wt')
-        self.writer = csv.writer(f)
+        self.writer = csv.writer(self.f)
         self.writer.writerow(('x','y','z'))
 
         self.minNumFeatures = 500
-        self.lk_params = dict(winsize=(15,15), criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 30, 0.01))
+        self.lk_params = dict(winSize=(15,15), criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 30, 0.01))
         
-        self.detector = cv2.FastFeatureDetector_create(threshold=25, nonmaxSuppression=True)
+        self.detector = cv2.FastFeatureDetector(threshold=25, nonmaxSuppression=True)
         
-        rospy.subscriber('/teamgrapes/camera_node/camera_info', CameraInfo, self.setCamParams)
-        rospy.subscriber('/teamgrapes/camera_node/image/compressed', CompressedImage, self.computePose)
+        rospy.Subscriber('/teamgrapes/camera_node/camera_info', CameraInfo, self.setCamParams)
+        rospy.Subscriber('/teamgrapes/camera_node/image/compressed', CompressedImage, self.computePose)
         
     def setCamParams(self, ci):
         self.D = ci.D
@@ -44,6 +45,8 @@ class VisualOdometry:
         self.pp = (self.K[2], self.K[5])
         self.camParamsSet = True
     
+    def findEssentialMat(self):
+        
     # calculate the movement of features between frames using KLT optical flow
     def trackFeatures(self):
         kp, st, err = cv2.calcOpticalFlowPyrLK(self.oldImage, self.newImage, self.oldFeatures, **(self.lk_params))
@@ -73,7 +76,7 @@ class VisualOdometry:
             self.newImage = image_cv_from_jpg(image_msg.data)
 
             self.trackFeatures()
-            E, mask = cv2.findEssentialMat(self.newFeatures, self.oldFeatures, focal=self.focal, pp=self.pp, method=cv2.RANSAC, prob=0.999, threshold=1.0)
+            E, mask = cv2.findFundamentalMat(self.newFeatures, self.oldFeatures)
             _, self.cur_R, self.cur_t, mask = cv2.recoverPose(E, self.newFeatures, self.oldFeatures, focal=self.focal, pp=self.pp)
 
             self.oldFeatures = self.newFeatures
@@ -88,7 +91,7 @@ class VisualOdometry:
         self.newImage = image_cv_from_jpg(image_msg.data)
 
         self.trackFeatures()
-        E, mask = cv2.findEssentialMat(self.newFeatures, self.oldFeatures, focal=self.focal, pp=self.pp, method=cv2.RANSAC, prob=0.999, threshold=1.0)
+        E, mask = cv2.findFundamentalMat(self.newFeatures, self.oldFeatures)
         _, R, t, mask = cv2.recoverPose(E, self.newFeatures, self.oldFeatures, focal=self.focal, pp=self.pp)
 
         self.cur_t = self.cur_t + self.cur_R.dot(t)
@@ -104,5 +107,5 @@ class VisualOdometry:
 
 if __name__ == '__main__':
     rospy.init_node('heatmap_odometry_node', anonymous=False)
-    vo = VisualOdometry()
+    vo = VisualOdometry('./odometry.csv')
     rospy.spin()
