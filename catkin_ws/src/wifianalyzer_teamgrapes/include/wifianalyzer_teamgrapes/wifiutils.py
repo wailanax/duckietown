@@ -6,6 +6,7 @@
 
 import sys
 import subprocess
+import noise
 
 interface = "wlan0"
 
