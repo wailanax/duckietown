@@ -1,4 +1,5 @@
 import cv2
+import csv
 import numpy as np
 import sys
 from sensor_msgs.msg import CameraInfo, CompressedImage, Image
@@ -12,11 +13,16 @@ from cv_bridge import CvBridge, CvBridgeError
 #        self.cx = cx
 
 class VisualOdometry:
-    def __init__(self):
+    def __init__(self, outputFile):
         self.camParamsSet = False
-        self.xPos = 0.0
-        self.yPos = 0.0
-        self.zPos = 0.0
+        self.firstImage = True
+        self.secondImage = True
+
+        self.f = open(outputFile, 'wt')
+        self.writer = csv.writer(f)
+        self.writer.writerow(('x','y','z'))
+
+        self.minNumFeatures = 500
         self.lk_params = dict(winsize=(15,15), criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 30, 0.01))
         
         self.detector = cv2.FastFeatureDetector_create(threshold=25, nonmaxSuppression=True)
@@ -41,7 +47,11 @@ class VisualOdometry:
         st = st.reshape(st.shape[0])
         self.oldFeatures = self.oldFeatures[st == 1]
         self.newFeatures = kp[st == 1]
-        
+
+    def publishPose(self):
+        x, y, z = (self.cur_t[0], self.cur_t[1], self.cur_t[2])
+        self.writer.writerow((x,y,z))
+
     def computePose(self, image_msg):
         # if we haven't set the camera parameters, do nothing
         if (not self.camParamsSet):
@@ -53,23 +63,39 @@ class VisualOdometry:
             self.oldFeatures = self.detector.detect(self.oldImage)
             self.oldFeatures = np.array([x.pt for x in self.oldFeatures], dtype=np.float32)
             self.firstImage = False
-            self.publishPose()
             return
         
         if (self.secondImage):
             self.newImage = image_cv_from_jpg(image_msg.data)
+
             self.trackFeatures()
             E, mask = cv2.findEssentialMat(self.newFeatures, self.oldFeatures, focal=self.focal, pp=self.pp, method=cv2.RANSAC, prob=0.999, threshold=1.0)
             _, self.cur_R, self.cur_t, mask = cv2.recoverPose(E, self.newFeatures, self.oldFeatures, focal=self.focal, pp=self.pp)
+
             self.oldFeatures = self.newFeatures
             self.oldImage = self.newImage
+
             self.secondImage = False
+
+            self.publishPose()
             return
                 
         # process subsequent images
         self.newImage = image_cv_from_jpg(image_msg.data)
+
         self.trackFeatures()
-        E, mask = cv2.findEssentialMat(
+        E, mask = cv2.findEssentialMat(E, self.newFeatures self.oldFeatures, focal=self.focal, pp=self.pp, method=cv2.RANSAC, prob=0.999, threshold=1.0)
+        _, R, t, mask = cv2.recoverPose(E, self.newFeatures, self.oldFeatures, focal=self.focal, pp=self.pp)
+
+        self.cur_t = self.cur_t + self.cur_R.dot(t)
+        self.cur_R = self.cur_R.dot(R)
+
+        if (self.newFeatures.shape[0] < self.minNumFeatures):
+            self.newFeatures = self.detector.detect(self.newImage)
+
+        self.oldFeatures = self.newFeatures
+        self.oldImage = self.newImage
+        self.publishPose()
 
 if __name__ == '__main__':
     rospy.init_node('heatmap_odometry_node', anonymous=False)
