@@ -87,7 +87,7 @@ class VisualOdometry:
         self.newImage = image_cv_from_jpg(image_msg.data)
 
         self.trackFeatures()
-        E, mask = cv2.findEssentialMat(E, self.newFeatures self.oldFeatures, focal=self.focal, pp=self.pp, method=cv2.RANSAC, prob=0.999, threshold=1.0)
+        E, mask = cv2.findEssentialMat(self.newFeatures self.oldFeatures, focal=self.focal, pp=self.pp, method=cv2.RANSAC, prob=0.999, threshold=1.0)
         _, R, t, mask = cv2.recoverPose(E, self.newFeatures, self.oldFeatures, focal=self.focal, pp=self.pp)
 
         self.cur_t = self.cur_t + self.cur_R.dot(t)
