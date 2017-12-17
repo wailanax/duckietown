@@ -50,6 +50,7 @@ class VisualOdometry:
 
     def publishPose(self):
         x, y, z = (self.cur_t[0], self.cur_t[1], self.cur_t[2])
+        rospy.loginfo(rospy.get_caller_id() + " robot is now at x:%f y:%f z:%f", x, y, z)
         self.writer.writerow((x,y,z))
 
     def computePose(self, image_msg):
@@ -92,6 +93,7 @@ class VisualOdometry:
 
         if (self.newFeatures.shape[0] < self.minNumFeatures):
             self.newFeatures = self.detector.detect(self.newImage)
+            self.newFeatures = np.array([x.pt for x in self.newFeatures], dtype=np.float32)
 
         self.oldFeatures = self.newFeatures
         self.oldImage = self.newImage
