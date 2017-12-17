@@ -66,7 +66,7 @@ def listener():
     writer.writerow(('x','y','strength'))
     print "listening\n"
     #rospy.init_node('heatmap_data_node', anonymous=True)
-    rospy.Subscriber("/teamgrapes/lane_controller_node/car_cmd", Twist2DStamped, updatePosition)
+    rospy.Subscriber("/teamgrapes/joy_mapper_node/car_cmd", Twist2DStamped, updatePosition)
     rospy.spin()
 
 if __name__ == '__main__':
