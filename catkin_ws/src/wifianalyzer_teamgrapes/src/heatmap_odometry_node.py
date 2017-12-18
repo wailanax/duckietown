@@ -141,7 +141,9 @@ class VisualOdometry:
 
         self.oldFeatures = self.newFeatures
         self.oldImage = self.newImage
-        kpim = cv2.drawKeypoints(self.oldImage, self.oldFeatures)
+        kpim = self.oldImage.copy()
+        for feature in self.oldFeatures:
+            kpim = cv2.circle(kpim, (feature[0], feature[1]), 3, (0,0,255))
         cv2.imwrite('odometryimage%d.png' % (self.imindex), kpim)
         self.imindex += 1
         self.publishPose()
