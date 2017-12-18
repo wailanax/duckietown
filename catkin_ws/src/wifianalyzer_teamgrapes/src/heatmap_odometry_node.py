@@ -135,7 +135,7 @@ class VisualOdometry:
 
         self.oldFeatures = self.newFeatures
         self.oldImage = self.newImage
-        cv2.imwrite('odometryimage%d.png' % (imindex), oldImage)
+        cv2.imwrite('odometryimage%d.png' % (self.imindex), self.oldImage)
         self.publishPose()
 
 if __name__ == '__main__':
