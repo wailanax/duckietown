@@ -21,6 +21,7 @@ class VisualOdometry:
         self.camParamsSet = False
         self.firstImage = True
         self.secondImage = True
+        self.imindex = 0
 
         self.f = open(outputFile, 'wt')
         self.writer = csv.writer(self.f)
@@ -133,6 +134,7 @@ class VisualOdometry:
 
         self.oldFeatures = self.newFeatures
         self.oldImage = self.newImage
+        cv2.imwrite('odometryimage%d.png' % (imindex), oldImage)
         self.publishPose()
 
 if __name__ == '__main__':
