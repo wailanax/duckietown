@@ -92,16 +92,22 @@ class VisualOdometry:
         if (not self.camParamsSet):
             return
         
+        # undistort image
+        undistorted = image_cv_from_jpg(image_msg.data)
+        K = np.matrix(self.K)
+        K = K.reshape((3,3))
+        undistorted = cv2.undistort(undistorted, K, self.D)
+
         # if we haven't processed the first image, do that
         if (self.firstImage):
-            self.oldImage = image_cv_from_jpg(image_msg.data)
+            self.oldImage = undistorted
             self.oldFeatures = self.detector.detect(self.oldImage)
             self.oldFeatures = np.array([x.pt for x in self.oldFeatures], dtype=np.float32)
             self.firstImage = False
             return
         
         if (self.secondImage):
-            self.newImage = image_cv_from_jpg(image_msg.data)
+            self.newImage = undistorted
 
             self.trackFeatures()
             F, mask = cv2.findFundamentalMat(self.newFeatures, self.oldFeatures)
@@ -118,7 +124,7 @@ class VisualOdometry:
             return
             
         # process subsequent images
-        self.newImage = image_cv_from_jpg(image_msg.data)
+        self.newImage = undistorted
 
         self.trackFeatures()
         F, mask = cv2.findFundamentalMat(self.newFeatures, self.oldFeatures)
@@ -136,6 +142,7 @@ class VisualOdometry:
         self.oldFeatures = self.newFeatures
         self.oldImage = self.newImage
         cv2.imwrite('odometryimage%d.png' % (self.imindex), self.oldImage)
+        self.imindex += 1
         self.publishPose()
 
 if __name__ == '__main__':
