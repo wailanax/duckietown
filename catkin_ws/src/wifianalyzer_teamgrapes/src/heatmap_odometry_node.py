@@ -140,10 +140,11 @@ class VisualOdometry:
             self.newFeatures = np.array([x.pt for x in self.newFeatures], dtype=np.float32)
 
         self.oldFeatures = self.newFeatures
-        self.oldImage = self.newImage
+        self.oldImage = self.newImage.copy()
         kpim = self.oldImage.copy()
         for feature in self.oldFeatures:
-            kpim = cv2.circle(kpim, (feature[0], feature[1]), 3, (0,0,255))
+            #print(feature)
+            cv2.circle(kpim, (int(feature[0]), int(feature[1])), 3, (0,0,255))
         cv2.imwrite('odometryimage%d.png' % (self.imindex), kpim)
         self.imindex += 1
         self.publishPose()
