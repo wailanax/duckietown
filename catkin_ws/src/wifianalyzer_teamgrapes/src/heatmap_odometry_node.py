@@ -134,19 +134,20 @@ class VisualOdometry:
 
         self.cur_t = self.cur_t + self.cur_R.dot(t)
         self.cur_R = self.cur_R.dot(R)
-
+        
+        print('num features %d' % (self.newFeatures.shape[0]))
         if (self.newFeatures.shape[0] < self.minNumFeatures):
             self.newFeatures = self.detector.detect(self.newImage)
             self.newFeatures = np.array([x.pt for x in self.newFeatures], dtype=np.float32)
 
         self.oldFeatures = self.newFeatures
         self.oldImage = self.newImage.copy()
-        kpim = self.oldImage.copy()
-        for feature in self.oldFeatures:
+        #kpim = self.oldImage.copy()
+        #for feature in self.oldFeatures:
             #print(feature)
-            cv2.circle(kpim, (int(feature[0]), int(feature[1])), 3, (0,0,255))
-        cv2.imwrite('odometryimage%d.png' % (self.imindex), kpim)
-        self.imindex += 1
+         #   cv2.circle(kpim, (int(feature[0]), int(feature[1])), 3, (0,0,255))
+        #cv2.imwrite('odometryimage%d.png' % (self.imindex), kpim)
+        #self.imindex += 1
         self.publishPose()
 
 if __name__ == '__main__':
