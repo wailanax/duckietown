@@ -58,7 +58,7 @@ class VisualOdometry:
 
     # finds R and t, the rotation and translation between two camera angles.
     def recoverPose(self, E):
-        w, u, vt = np.linalg.svd(np.mat(E))
+        w, u, vt = cv2.SVDecomp(np.mat(E))
 
         # this provides us with 4 possible solutions. Return the best one:
         if np.linalg.det(u) < 0:
@@ -81,7 +81,8 @@ class VisualOdometry:
         self.newFeatures = kp[st == 1]
 
     def publishPose(self):
-        x, y, z = (self.cur_t[0], self.cur_t[1], self.cur_t[2])
+        #print(self.cur_t)
+        x, y, z = (self.cur_t[0,0], self.cur_t[0,1], self.cur_t[0,2])
         rospy.loginfo(rospy.get_caller_id() + " robot is now at x:%f y:%f z:%f", x, y, z)
         self.writer.writerow((x,y,z))
 
@@ -119,7 +120,7 @@ class VisualOdometry:
         self.newImage = image_cv_from_jpg(image_msg.data)
 
         self.trackFeatures()
-        E, mask = cv2.findFundamentalMat(self.newFeatures, self.oldFeatures)
+        F, mask = cv2.findFundamentalMat(self.newFeatures, self.oldFeatures)
         # _, R, t, mask = cv2.recoverPose(E, self.newFeatures, self.oldFeatures, focal=self.focal, pp=self.pp)
         E = self.findEssentialMat(F)
         R, t = self.recoverPose(E)
