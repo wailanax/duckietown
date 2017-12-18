@@ -82,7 +82,7 @@ class VisualOdometry:
         self.newFeatures = kp[st == 1]
 
     def publishPose(self):
-        #print(self.cur_t)
+        print(self.cur_t)
         x, y, z = (self.cur_t[0,0], self.cur_t[0,1], self.cur_t[0,2])
         rospy.loginfo(rospy.get_caller_id() + " robot is now at x:%f y:%f z:%f", x, y, z)
         self.writer.writerow((x,y,z))
