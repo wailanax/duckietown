@@ -45,7 +45,33 @@ class VisualOdometry:
         self.pp = (self.K[2], self.K[5])
         self.camParamsSet = True
     
-    def findEssentialMat(self):
+    # finds the essential matrix using K and the fundamental matrix
+    def findEssentialMat(self, F):
+        # reshape K to a 3x3 camera matrix
+        K = np.matrix(self.K)
+        K = K.reshape((3,3))
+
+        # the essential matrix is equal to the K_T * F * K where K_T is the transpose of K
+        E = K.T * np.mat(F) * K
+
+        return E
+
+    # finds R and t, the rotation and translation between two camera angles.
+    def recoverPose(self, E):
+        w, u, vt = np.linalg.svd(np.mat(E))
+
+        # this provides us with 4 possible solutions. Return the best one:
+        if np.linalg.det(u) < 0:
+            u *= -1.0
+        if np.linalg.det(vt) < 0:
+            vt *= -1.0
+
+        # solve for R and t using algorithm from Hartley & Zisserman
+        W=np.mat([[0,-1,0],[1,0,0],[0,0,1]],dtype=float)
+        R = np.mat(u) * W * np.mat(vt)
+        t = u[:,2]
+
+        return R, t
         
     # calculate the movement of features between frames using KLT optical flow
     def trackFeatures(self):
@@ -76,8 +102,10 @@ class VisualOdometry:
             self.newImage = image_cv_from_jpg(image_msg.data)
 
             self.trackFeatures()
-            E, mask = cv2.findFundamentalMat(self.newFeatures, self.oldFeatures)
-            _, self.cur_R, self.cur_t, mask = cv2.recoverPose(E, self.newFeatures, self.oldFeatures, focal=self.focal, pp=self.pp)
+            F, mask = cv2.findFundamentalMat(self.newFeatures, self.oldFeatures)
+            # _, self.cur_R, self.cur_t, mask = cv2.recoverPose(E, self.newFeatures, self.oldFeatures, focal=self.focal, pp=self.pp)
+            E = self.findEssentialMat(F)
+            self.cur_R, self.cur_t = self.recoverPose(E)
 
             self.oldFeatures = self.newFeatures
             self.oldImage = self.newImage
@@ -86,13 +114,15 @@ class VisualOdometry:
 
             self.publishPose()
             return
-                
+            
         # process subsequent images
         self.newImage = image_cv_from_jpg(image_msg.data)
 
         self.trackFeatures()
         E, mask = cv2.findFundamentalMat(self.newFeatures, self.oldFeatures)
-        _, R, t, mask = cv2.recoverPose(E, self.newFeatures, self.oldFeatures, focal=self.focal, pp=self.pp)
+        # _, R, t, mask = cv2.recoverPose(E, self.newFeatures, self.oldFeatures, focal=self.focal, pp=self.pp)
+        E = self.findEssentialMat(F)
+        R, t = self.recoverPose(E)
 
         self.cur_t = self.cur_t + self.cur_R.dot(t)
         self.cur_R = self.cur_R.dot(R)
