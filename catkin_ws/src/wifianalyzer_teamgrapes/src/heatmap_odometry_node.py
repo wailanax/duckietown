@@ -20,7 +20,7 @@ class VisualOdometry:
         self.writer = csv.writer(self.f)
         self.writer.writerow(('x','y','z'))
 
-        self.minNumFeatures = 100
+        self.minNumFeatures = 200
         self.lk_params = dict(winSize=(21,21), criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 30, 0.01))
         
         self.detector = cv2.FastFeatureDetector(threshold=25, nonmaxSuppression=True)
@@ -85,8 +85,8 @@ class VisualOdometry:
         # solve for true solution by testing cheirality of each option
 
         # use only inliers to test cheirality
-        maskedOldFeatures = self.oldFeatures[mask.ravel() == 1].astype(np.float32)
-        maskedNewFeatures = self.newFeatures[mask.ravel() == 1].astype(np.float32)
+        maskedOldFeatures = normOldPts[mask.ravel() == 1].astype(np.float32)
+        maskedNewFeatures = normNewPts[mask.ravel() == 1].astype(np.float32)
         # maskedOldFeatures = np.array(normOldPts[mask == 1], dtype=np.float32)
         # maskedNewFeatures = np.array(normNewPts[mask == 1], dtype=np.float32)
 
