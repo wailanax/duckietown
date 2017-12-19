@@ -38,7 +38,6 @@ class PoseEstimator:
         if (self.z / 2.5 > (self.tiles_crossed+1)):
             rospy.loginfo('tile %d has been crossed', self.tiles_crossed)
             self.tiles_crossed += 1
-        
 
 if __name__ == '__main__':
     rospy.init_node('lane_pose_estimator_node', anonymous=True)

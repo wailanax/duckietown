@@ -9,13 +9,6 @@ from sensor_msgs.msg import CameraInfo, CompressedImage, Image
 from cv_bridge import CvBridge, CvBridgeError
 from duckietown_utils.jpg import image_cv_from_jpg
 
-#class PinholeCamera:
-#    def __init__(self, width, height, fx, fy, cx, cy, k1, k2, p1, p2, k3):
-#        self.width = width
-#        self.height = height
-#        self.fx = fx
-#        self.cx = cx
-
 class VisualOdometry:
     def __init__(self, outputFile):
         self.camParamsSet = False
@@ -38,6 +31,8 @@ class VisualOdometry:
     def setCamParams(self, ci):
         self.D = ci.D
         self.K = ci.K
+        self.K = np.matrix(self.K, dtype=np.float32)
+        self.K = K.reshape((3,3))
         self.R = ci.R
         self.P = ci.P
         self.width = ci.width
@@ -47,18 +42,23 @@ class VisualOdometry:
         self.camParamsSet = True
     
     # finds the essential matrix using K and the fundamental matrix
-    def findEssentialMat(self, F):
-        # reshape K to a 3x3 camera matrix
-        K = np.matrix(self.K)
-        K = K.reshape((3,3))
-
+    def findEssentialMat(self):
         # the essential matrix is equal to the K_T * F * K where K_T is the transpose of K
-        E = K.T * np.mat(F) * K
+        # E = self.K.T * np.mat(F) * self.K
 
-        return E
+        # E = np.mat(F)
+
+        # normalize image coordinates
+        normOldPts = cv2.undistortPoints(self.oldFeatures, self.K)
+        normNewPts = cv2.undistortPoints(self.newFeatures, self.K)
+
+        E, mask = cv2.findFundamentalMat(normOldPts, normNewPts, method=cv2.FM_RANSAC)
+
+        return E, normOldPts, normNewPts, mask
 
     # finds R and t, the rotation and translation between two camera angles.
-    def recoverPose(self, E):
+    def recoverPose(self):
+        E, normOldPts, normNewPts, mask = self.findEssentialMat()
         w, u, vt = cv2.SVDecomp(np.mat(E))
 
         # this provides us with 4 possible solutions. Return the best one:
@@ -68,11 +68,54 @@ class VisualOdometry:
             vt *= -1.0
 
         # solve for R and t using algorithm from Hartley & Zisserman
-        W=np.mat([[0,-1,0],[1,0,0],[0,0,1]],dtype=float)
-        R = np.mat(u) * W * np.mat(vt)
+        W=np.mat([[0,1,0],[-1,0,0],[0,0,1]], dtype=np.float32)
+        Ra = np.mat(u) * W * np.mat(vt)
+        Rb = np.mat(u) * W.T * np.mat(vt)
         t = u[:,2]
 
-        return R, t
+        # we now have four solutions
+        Pa = np.concatenate((Ra, t), axis=1)
+        Pb = np.concatenate((Ra, -1.0*t), axis=1)
+        Pc = np.concatenate((Rb, t), axis=1)
+        Pd = np.concatenate((Rb, -1.0*t), axis=1)
+
+        # solve for true solution by testing cheirality of each option
+
+        # use only inliers to test cheirality
+        maskedOldFeatures = np.array(self.oldFeatures[mask == 1], dtype=np.float32)
+        maskedNewFeatures = np.array(self.newFeatures[mask == 1], dtype=np.float32)
+        # maskedOldFeatures = np.array(normOldPts[mask == 1], dtype=np.float32)
+        # maskedNewFeatures = np.array(normNewPts[mask == 1], dtype=np.float32)
+
+        # we assume the perspective matrix for our old frame is P = [I | 0]
+        Po = np.mat([[1,0,0,0],[0,1,0,0],[0,0,1,0]], dtype=np.float32)
+                                            # 2xN array
+        p4d = cv2.triangulatePoints(Po, Pa, maskedOldFeatures[:1].T, maskedNewFeatures[:1].T)
+        Q = p4d[:,0]
+
+        v = vt.T
+        v_2 = -2*v
+        Ht = np.mat([[1,0,0,0],[0,1,0,0],[0,0,1,0],[v_2[0,2], v_2[1,2], v_2[2,2]]])
+
+        # if c1 < 0, the point is behind the first camera
+        c1 = Q[2] * Q[3]
+
+        # if c2 < 0, the point is behind the second camera
+        c2 = (Pa * Q)[2] * Q[3]
+
+        c3 = Q[2] * (Ht * Q)[3]
+
+        # if both c1 and c2 are greater than 0, Pa is our solution
+        if (c1 > 0 and c2 > 0):
+            return Pa[:,:3], Pa[:,3]
+
+        if (c1 < 0 and c2 < 0):
+            return Pb[:,:3], Pb[:,3]
+
+        if (c1*c2 < 0 and c3 > 0):
+            return Pc[:,:3], Pc[:,3]
+
+        return Pd[:,:3], Pd[:,3]
         
     # calculate the movement of features between frames using KLT optical flow
     def trackFeatures(self):
@@ -94,9 +137,10 @@ class VisualOdometry:
         
         # undistort image
         undistorted = image_cv_from_jpg(image_msg.data)
-        K = np.matrix(self.K)
-        K = K.reshape((3,3))
-        undistorted = cv2.undistort(undistorted, K, self.D)
+        undistorted = cv2.undistort(undistorted, self.K, self.D)
+
+        # convert image to grayscale
+        undistorted = cv2.cvtColor(undistorted, cv2.COLOR_BGR2GRAY)
 
         # if we haven't processed the first image, do that
         if (self.firstImage):
@@ -110,10 +154,10 @@ class VisualOdometry:
             self.newImage = undistorted
 
             self.trackFeatures()
-            F, mask = cv2.findFundamentalMat(self.newFeatures, self.oldFeatures)
+            # F, mask = cv2.findFundamentalMat(self.newFeatures, self.oldFeatures)
             # _, self.cur_R, self.cur_t, mask = cv2.recoverPose(E, self.newFeatures, self.oldFeatures, focal=self.focal, pp=self.pp)
-            E = self.findEssentialMat(F)
-            self.cur_R, self.cur_t = self.recoverPose(E)
+            # E, normOldPts, normNewPts, mask = self.findEssentialMat()
+            self.cur_R, self.cur_t = self.recoverPose()
 
             self.oldFeatures = self.newFeatures
             self.oldImage = self.newImage
