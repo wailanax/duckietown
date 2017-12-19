@@ -15,7 +15,7 @@ class VisualOdometry:
         self.firstImage = True
         self.secondImage = True
         self.imindex = 0
-
+        self.scale = 0.0
         self.f = open(outputFile, 'wt')
         self.writer = csv.writer(self.f)
         self.writer.writerow(('x','y','z'))
@@ -135,6 +135,35 @@ class VisualOdometry:
         rospy.loginfo(rospy.get_caller_id() + " robot is now at x:%f y:%f z:%f", x, y, z)
         self.writer.writerow((x,y,z))
 
+    def triangulatePoints(self, R, t):
+        P0 = np.array([[1,0,0,0],[0,1,0,0],[0,0,1,0]])
+        P0 = self.K.dot(P0)
+
+        P1 = np.hstack((R,t))
+        P1 = self.K.dot(P1)
+
+        point1 = self.oldFeatures.T
+        point2 = self.newFeatures.T
+
+        return cv2.triangulatePoints(P0,P1,point1,point2).T[:,:3]
+
+    def getRelativeScale(self):
+        min_idx = min([self.newCloud.shape[0], self.oldCloud.shape[0]])
+
+        ratios = []
+        for i in xrange(min_idx):
+            if i > 0:
+                Xk = self.newCloud[i]
+                p_Xk = self.newCloud[i-1]
+                Xk_1 = self.oldCloud[i]
+                p_Xk_1 = self.oldCloud[i-1]
+
+                if np.linalg.norm(p_Xk-Xk) != 0:
+                    ratios.append(np.linalg.norm(p_Xk_1 - Xk_1) / np.linalg.norm(p_Xk - Xk))
+
+        d_ratio = np.median(ratios)
+        return d_ratio
+
     def computePose(self, image_msg):
         # if we haven't set the camera parameters, do nothing
         if (not self.camParamsSet):
@@ -164,8 +193,11 @@ class VisualOdometry:
             # E, normOldPts, normNewPts, mask = self.findEssentialMat()
             self.cur_R, self.cur_t = self.recoverPose()
 
+            self.newCloud = self.triangulatePoints(self.cur_R, self.cur_t)
+
             self.oldFeatures = self.newFeatures
             self.oldImage = self.newImage
+            self.oldCloud = self.newCloud
 
             self.secondImage = False
 
@@ -181,7 +213,10 @@ class VisualOdometry:
         #E = self.findEssentialMat(F)
         R, t = self.recoverPose()
 
-        self.cur_t = self.cur_t + self.cur_R * t
+        self.newCloud = self.triangulatePoints(R,t)
+        self.scale = self.getRelativeScale()
+
+        self.cur_t = self.cur_t + self.scale * self.cur_R * t
         self.cur_R = self.cur_R * R
         
         print('num features %d' % (self.newFeatures.shape[0]))
@@ -191,6 +226,7 @@ class VisualOdometry:
 
         self.oldFeatures = self.newFeatures
         self.oldImage = self.newImage.copy()
+        self.oldCloud = self.newCloud
         #kpim = self.oldImage.copy()
         #for feature in self.oldFeatures:
             #print(feature)
